@@ -8,6 +8,9 @@ from collections import defaultdict # for bag of words
 # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
 from sklearn.naive_bayes import MultinomialNB # Multinomial Naive Bayes model 
 
+# https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.ComplementNB.html
+from sklearn.naive_bayes import ComplementNB
+
 # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression
 from sklearn.linear_model import LogisticRegression # logistic regression model
 
@@ -18,7 +21,7 @@ from sklearn.svm import LinearSVC # linear support vector classifier model
 from sklearn.feature_extraction.text import CountVectorizer # for vectorizing text data into numbers that the scikit models can use  
 
 
-# Function for associating a bag of words with a sense for each context in the training data
+# Function for creating a list of contexts and senses from the training data to pass into the model of choice
 def bow(trainText):
 
     contexts = []
@@ -34,14 +37,14 @@ def bow(trainText):
         fullContext = re.sub(r"<head>", "", fullContext) # remove the starting head tag(s) around line/lines
         fullContext = re.sub(r"</head>", "", fullContext) # remove the trailing head tag(s) around line/lines
 
-        # Make lists of the contexts and labels to give the model of choice
+        # Make lists of the contexts and labels to give to the model of choice
         contexts.append(fullContext)
         labels.append(sense)
 
     return contexts, labels
 
-# Function for training the naive bayes model
-def nbTrain(contexts, labels):
+# Function for training the multimodal naive bayes model
+def mnbTrain(contexts, labels):
 
     # I found this list https://gist.github.com/sebleier/554280 and decided to pull some common ones from it that would likely appear in the training data. I found that messing
     # with this did not effect my accuracy or confusion matrix that much so I settled for this. I added the line/lines into here to avoid more regex shenanigans later.
@@ -52,10 +55,26 @@ def nbTrain(contexts, labels):
     wordMat = vec.fit_transform(contexts) # matrix of all of the feature vectors
 
     # make the naive bayes model and fit it to our feature vectors and their labels
-    nb = MultinomialNB()
-    nb.fit(wordMat, labels)
+    mnb = MultinomialNB()
+    mnb.fit(wordMat, labels)
 
-    return nb, vec
+    return mnb, vec
+
+def cnbTrain(contexts, labels):
+
+    # I found this list https://gist.github.com/sebleier/554280 and decided to pull some common ones from it that would likely appear in the training data. I found that messing
+    # with this did not effect my accuracy or confusion matrix that much so I settled for this. I added the line/lines into here to avoid more regex shenanigans later.
+    stopwords = ["line", "lines", "the", "is", "and", "if", "or", "but", "a", "an", "of", "to", "in", "on", "for", "with", "into"]
+
+    #https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+    vec = CountVectorizer(stop_words = stopwords) # this vectorizes our contexts for use in the models, and removes the same stopwords as before
+    wordMat = vec.fit_transform(contexts) # matrix of all of the feature vectors
+
+    # make the naive bayes model and fit it to our feature vectors and their labels
+    cnb = ComplementNB()
+    cnb.fit(wordMat, labels)
+
+    return cnb, vec
 
 def lrTrain(contexts, labels):
     
@@ -122,18 +141,20 @@ def main():
 
     # determine desired model, default to naive bayes if none specified
     if(len(sys.argv) > 3):
-        if(sys.argv[3] == "NaiveBayes"):
-            model, vec = nbTrain(contexts, labels)
+        if(sys.argv[3] == "MNaiveBayes"):
+            model, vec = mnbTrain(contexts, labels)
+        elif(sys.argv[3] == "CNaiveBayes"):
+            model, vec = cnbTrain(contexts, labels)
         elif(sys.argv[3] == "LinearRegression"):
             model, vec = lrTrain(contexts, labels)
         elif(sys.argv[3] == "SVC"):
             model, vec = svcTrain(contexts, labels)
         else:
             # use sys.stderr so we can print to console, otherwise this gets added to my-line-answers.txt
-            print("Model name not recognized, performing Naive Bayes by default", file=sys.stderr)
-            model, vec = nbTrain(contexts, labels)
+            print("Model name not recognized, performing Multimodal Naive Bayes by default", file=sys.stderr)
+            model, vec = mnbTrain(contexts, labels)
     else:
-        model, vec = nbTrain(contexts, labels)
+        model, vec = mnbTrain(contexts, labels)
     
     # apply the model to the test data
     modelApply(model, vec, testFile)
