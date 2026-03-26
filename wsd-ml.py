@@ -279,7 +279,7 @@ def main():
     else:
         model, vec = mnbTrain(contexts, labels)
     
-    # apply the model to the test data
+    # apply the model to the test dat
     modelApply(model, vec, testFile)
 
 if __name__ == "__main__":
