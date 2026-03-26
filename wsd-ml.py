@@ -114,6 +114,9 @@
 # differences in classification decisions. The confusion matrices show that most errors occur when predicting the product sense, which is occasionally misclassified as phone, whereas 
 # the phone sense is generally predicted more reliably.
 
+# This program was written by Jacob Gray for CMSC 437 taught by Dr. Bridget McInness at Virginia Commonwealth University
+# Last Update: 3/26/2026
+
 # This website was instrumental for figuring out how all of the different models' functions worked. I linked their individual pages with their import statements below. 
 # https://scikit-learn.org/stable/
 
@@ -206,7 +209,7 @@ def lrTrain(contexts, labels):
     wordMat = vec.fit_transform(contexts) # transforms our vocabulary into matrix where each row is a bag of words count vector and each column is a word in our vocabulary
 
     # make the logistic regression model and fit it to our feature vectors and their labels
-    lr = LogisticRegression(max_iter=1000)
+    lr = LogisticRegression(max_iter=1000) # set this high so that there is a limit but we probably wont get there
     lr.fit(wordMat, labels)
 
     return lr, vec
